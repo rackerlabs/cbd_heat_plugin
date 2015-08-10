@@ -35,7 +35,7 @@ class RackspaceCBDClientPlugin(client_plugin.ClientPlugin):
     """
     lava_client = None
 
-    def _get_client(self, _):
+    def _get_client(self, ignored):
         """Return the CBD Lava client."""
         return self.lava_client
 
