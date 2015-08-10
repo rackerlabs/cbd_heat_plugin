@@ -31,9 +31,7 @@ LOG = logging.getLogger(__name__)
 
 class CloudBigData(resource.Resource):
     """Represents a Cloud Big Data resource."""
-    support_status = support.SupportStatus(
-        status=support.UNSUPPORTED,
-        message=_('This resource is not supported, use at your own risk.'))
+    support_status = support.SupportStatus(version='2015.8')
 
     PROPERTIES = (
         CLUSTER_NAME, STACK_ID, FLAVOR, NUM_SLAVES, CLUSTER_LOGIN,
