@@ -166,7 +166,7 @@ class CloudBigData(resource.Resource):
             raise
         self.resource_id_set(str(cluster.id))
 
-    def check_create_complete(self, _):
+    def check_create_complete(self, ignored):
         """Check the cluster creation status."""
         try:
             cluster = self.cloud_big_data().clusters.get(self.resource_id)
@@ -188,7 +188,7 @@ class CloudBigData(resource.Resource):
             except LavaError as exc:
                 LOG.info("CBD cluster already created", exc_info=exc)
 
-    def check_delete_complete(self, _):
+    def check_delete_complete(self, ignored):
         """
         Return deletion status.
         :param result: None
