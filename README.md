@@ -25,7 +25,7 @@ The following are useful Heat CLI examples used in the creation and testing of t
 
 Notes:
 * region - will look like DFW, ORD, IAD, LON, etc
-* heat_url - has a format like http://<heat_server_ip>/v1/<tenant_id>
+* heat_url - has a format like http://heat_server_ip/v1/tenant_id
 
 ##### Create a Heat Stack
 ```sh
