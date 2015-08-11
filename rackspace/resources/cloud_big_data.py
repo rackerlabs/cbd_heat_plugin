@@ -170,8 +170,16 @@ class CloudBigData(resource.Resource):
         """Check the cluster creation status."""
         try:
             cluster = self.cloud_big_data().clusters.get(self.resource_id)
-        except RequestError:
-            return True
+        except RequestError as exc:
+            # RequestError is the only exception that should be retried and
+            # only a 503 HTTP status code should be retried. Only 4xx-5xx
+            # codes are returned by this exception.
+            if exc.code == 503:
+                return False
+            raise
+        # If any other LavaError-based exception is raised, it is a failed
+        # cluster create. Let the exception bubble up to Heat.
+
         if cluster.status == 'ACTIVE':
             return True
         if cluster.status == 'ERROR':
