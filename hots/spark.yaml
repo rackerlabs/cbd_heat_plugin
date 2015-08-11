@@ -8,6 +8,7 @@ parameter_groups:
  - label: Cluster Details
    parameters:
    - clusterName
+   - stackId
 
  - label: Cluster Login
    parameters:
@@ -33,6 +34,15 @@ parameters:
     - allowed_pattern: "^[a-zA-Z][a-zA-Z0-9-_]*$"
       description: Must begin with a letter and can contain underscores/alphanumeric characters.
     - length: { max : 50 }
+
+  stackID:
+    label: Cluster Stack ID
+    description: Use only allowed cluster stack ID to build cluster.
+    type: string
+    default: "SPARK_HDP2_2"
+    constraints:
+    - allowed_values: "SPARK_HDP2_2"
+
 
   # Cluster login
   username:
@@ -94,7 +104,7 @@ resources:
   cbd_cluster:
     type: "Rackspace::Cloud::BigData"
     properties:
-      stackId: SPARK_HDP2_2
+      stackId:       { get_param: stackId }
       clusterName:   { get_param: clusterName }
       clusterLogin:  { get_param: username }
       flavor:        { get_param: flavor }
