@@ -221,9 +221,6 @@ class CloudBigData(resource.Resource):
 
         if name == self.CLUSTER_ID:
             return self.resource_id
-        if name not in [self.STACK_ID, self.CBD_VERSION]:
-            LOG.debug("Invalid CBD stack name %s", name)
-            return None
         try:
             cluster = self.cloud_big_data().clusters.get(self.resource_id)
         except LavaError as exc:
