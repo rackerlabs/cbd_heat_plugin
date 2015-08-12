@@ -112,20 +112,12 @@ class CloudBigData(resource.Resource):
     }
 
     ATTRIBUTES = (
-        CLUSTER_ID, STACK_ID, CBD_VERSION
+        CBD_VERSION
     ) = (
-        'clusterId', 'stackId', 'cbdVersion'
+        'cbdVersion'
     )
 
     attributes_schema = {
-        CLUSTER_ID: attributes.Schema(
-            _("Rackspace Cloud Big Data cluster ID"),
-            type=attributes.Schema.STRING
-        ),
-        STACK_ID: attributes.Schema(
-            _("Rackspace Cloud Big Data stack ID"),
-            type=attributes.Schema.STRING
-        ),
         CBD_VERSION: attributes.Schema(
             _("Rackspace Cloud Big Data version"),
             type=attributes.Schema.STRING
@@ -219,17 +211,12 @@ class CloudBigData(resource.Resource):
 
     def _resolve_attribute(self, name):
         """Enable returning of Cloud Big Data cluster ID."""
-
-        if name == self.CLUSTER_ID:
-            return self.resource_id
         try:
             cluster = self.client().clusters.get(self.resource_id)
         except LavaError as exc:
             LOG.debug("Unable to find CBD cluster", exc_info=exc)
             return None
 
-        if name == self.STACK_ID:
-            return cluster.stack_id
         if name == self.CBD_VERSION:
             return cluster.cbd_version
 
