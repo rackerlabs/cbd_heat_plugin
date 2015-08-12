@@ -190,11 +190,14 @@ class CloudBigData(resource.Resource):
     def handle_delete(self):
         """Delete a Rackspace Cloud Big Data Instance."""
         LOG.debug("Cloud Big Data handle_delete called.")
+        lava_client = self.cloud_big_data()
         if self.resource_id:
             try:
-                self.cloud_big_data().clusters.delete(self.resource_id)
+                lava_client.clusters.delete(self.resource_id)
             except LavaError as exc:
-                LOG.info("CBD cluster already created", exc_info=exc)
+                if not lava_client.is_not_found(exc):
+                    LOG.info("CBD cluster deletion error", exc_info=exc)
+                    raise
 
     def check_delete_complete(self, ignored):
         """
@@ -203,12 +206,14 @@ class CloudBigData(resource.Resource):
         if handle_delete returns any result, we can use
         it here.
         """
+        lava_client = self.cloud_big_data()
         if self.resource_id is None:
             return True
         try:
-            self.cloud_big_data().clusters.get(self.resource_id)
-        except LavaError:
-            return True
+            lava_client.clusters.get(self.resource_id)
+        except LavaError as exc:
+            if lava_client.is_not_found(exc):
+                return True
         return False
 
     def _resolve_attribute(self, name):

@@ -15,6 +15,7 @@
 
 from lavaclient.client import Lava
 from lavaclient.error import LavaError
+from lavaclient.error import RequestError
 from oslo_config import cfg
 from oslo_log import log as logging
 
@@ -64,3 +65,8 @@ class RackspaceCBDClientPlugin(client_plugin.ClientPlugin):
             LOG.warn(_LW("CBD client authentication failed: %s."), exc)
             raise exception.AuthorizationFailure()
         LOG.info(_LI("User %s authenticated successfully."), username)
+
+    def is_not_found(self, ex):
+        """Determine if a CBD cluster exists."""
+        return (isinstance(ex, RequestError) and
+                ex.code == 404)
