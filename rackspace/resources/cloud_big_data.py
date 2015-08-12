@@ -128,18 +128,15 @@ class CloudBigData(resource.Resource):
         )
     }
 
-    def cloud_big_data(self):
-        """Return the CBD client."""
-        return self.client('cloud_big_data')
+    default_client_name = "cloud_big_data"
 
     def handle_create(self):
         """Create a Rackspace Cloud Big Data Instance."""
         LOG.debug("Cloud Big Data handle_create called.")
-        lava_client = self.cloud_big_data()
         args = dict((key, val) for key, val in self.properties.items())
         # Create the cluster SSH key
         try:
-            lava_client.credentials.create_ssh_key(
+            self.client().credentials.create_ssh_key(
                 args[self.PUB_KEY_NAME],
                 args[self.PUB_KEY])
         except LavaError:
@@ -153,7 +150,7 @@ class CloudBigData(resource.Resource):
                             'count': num_slave_nodes,
                             'id': 'slave'}]
         try:
-            cluster = lava_client.clusters.create(
+            cluster = self.client().clusters.create(
                 name=args[self.CLUSTER_NAME],
                 stack_id=args[self.STACK_ID],
                 username=args[self.CLUSTER_LOGIN],
@@ -168,8 +165,7 @@ class CloudBigData(resource.Resource):
 
     def _show_resource(self):
         """ Show cluster resource details"""
-        lava_client = self.cloud_big_data()
-        return lava_client.clusters.get(self.resource_id)
+        return self.client().clusters.get(self.resource_id)
 
     def check_create_complete(self, ignored):
         """Check the cluster creation status."""
@@ -195,14 +191,11 @@ class CloudBigData(resource.Resource):
     def handle_delete(self):
         """Delete a Rackspace Cloud Big Data Instance."""
         LOG.debug("Cloud Big Data handle_delete called.")
-        lava_client = self.cloud_big_data()
         if self.resource_id:
             try:
-                lava_client.clusters.delete(self.resource_id)
+                self.client().clusters.delete(self.resource_id)
             except LavaError as exc:
-                if not lava_client.is_not_found(exc):
-                    LOG.info("CBD cluster deletion error", exc_info=exc)
-                    raise
+                self.client_plugin().ignore_not_found(exc)
 
     def check_delete_complete(self, ignored):
         """
@@ -211,14 +204,13 @@ class CloudBigData(resource.Resource):
         if handle_delete returns any result, we can use
         it here.
         """
-        lava_client = self.cloud_big_data()
         if self.resource_id is None:
             return True
         try:
-            lava_client.clusters.get(self.resource_id)
+            self.client().clusters.get(self.resource_id)
         except LavaError as exc:
-            if lava_client.is_not_found(exc):
-                return True
+            self.client_plugin().ignore_not_found(exc)
+            return True
         return False
 
     def _resolve_attribute(self, name):
@@ -227,7 +219,7 @@ class CloudBigData(resource.Resource):
         if name == self.CLUSTER_ID:
             return self.resource_id
         try:
-            cluster = self.cloud_big_data().clusters.get(self.resource_id)
+            cluster = self.client().clusters.get(self.resource_id)
         except LavaError as exc:
             LOG.debug("Unable to find CBD cluster", exc_info=exc)
             return None
@@ -236,7 +228,6 @@ class CloudBigData(resource.Resource):
             return cluster.stack_id
         if name == self.CBD_VERSION:
             return cluster.cbd_version
-
 
     def get_flavor_id(self, flavor):
         """Get the id for the specified flavor name.
@@ -247,7 +238,7 @@ class CloudBigData(resource.Resource):
         :raises: exception.FlavorMissing
         """
         try:
-            flavor_list = self.cloud_big_data().flavors.list()
+            flavor_list = self.client().flavors.list()
         except LavaError as exc:
             LOG.info("Unable to read CBD flavor list", exc_info=exc)
             raise
