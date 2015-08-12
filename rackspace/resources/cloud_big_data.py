@@ -89,7 +89,11 @@ class CloudBigData(resource.Resource):
         ),
         PUB_KEY_NAME: properties.Schema(
             properties.Schema.STRING,
-            _('Cluster public key name.'),
+            _('Cluster public key name. This key name will be used along with '
+              'the publicKey by the Cloud Big Data system to install SSH keys '
+              'on to CBD clusters for user access. If the key name already '
+              'exists, it will not be overwritten and the existing key will '
+              'be used instead.'),
             constraints=[
                 constraints.Length(max=50,
                                    description="Public key name is to long.")
