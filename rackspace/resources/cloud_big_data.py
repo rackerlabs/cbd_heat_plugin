@@ -166,10 +166,15 @@ class CloudBigData(resource.Resource):
             raise
         self.resource_id_set(str(cluster.id))
 
+    def _show_resource(self):
+        """ Show cluster resource details"""
+        lava_client = self.cloud_big_data()
+        return lava_client.clusters.get(self.resource_id)
+
     def check_create_complete(self, ignored):
         """Check the cluster creation status."""
         try:
-            cluster = self.cloud_big_data().clusters.get(self.resource_id)
+            cluster = self._show_resource()
         except RequestError as exc:
             # RequestError is the only exception that should be retried and
             # only a 503 HTTP status code should be retried. Only 4xx-5xx
@@ -231,6 +236,7 @@ class CloudBigData(resource.Resource):
             return cluster.stack_id
         if name == self.CBD_VERSION:
             return cluster.cbd_version
+
 
     def get_flavor_id(self, flavor):
         """Get the id for the specified flavor name.
