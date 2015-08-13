@@ -15,7 +15,6 @@
 
 from oslo_log import log as logging
 
-from heat.common import exception
 from heat.common.i18n import _
 from heat.engine import attributes
 from heat.engine import constraints
@@ -139,7 +138,7 @@ class CloudBigData(resource.Resource):
             pass  # A key may already exist
 
         # Create the cluster
-        flavor_id = self.client().get_flavor_id(args[self.FLAVOR])
+        flavor_id = self.client_plugin().get_flavor_id(args[self.FLAVOR])
         num_slave_nodes = args[self.NUM_SLAVES]
 
         node_group_list = [{'flavor_id': flavor_id,
@@ -219,6 +218,7 @@ class CloudBigData(resource.Resource):
 
         if name == self.CBD_VERSION:
             return cluster.cbd_version
+
 
 def resource_mapping():
     """Return the Rackspace Cloud Big Data identifier."""
