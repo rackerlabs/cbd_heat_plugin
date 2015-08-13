@@ -49,7 +49,7 @@ class RackspaceCBDClientPlugin(client_plugin.ClientPlugin):
         :raises: exception.FlavorMissing
         """
         try:
-            flavor_list = self._get_client().flavors.list()
+            flavor_list = self._get_client("cloud_big_data").flavors.list()
         except LavaError as exc:
             LOG.info("Unable to read CBD flavor list", exc_info=exc)
             raise
