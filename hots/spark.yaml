@@ -8,7 +8,7 @@ parameter_groups:
  - label: Cluster Details
    parameters:
    - clusterName
-   - stackId
+   - bigDataStackId
 
  - label: Cluster Login
    parameters:
@@ -35,13 +35,14 @@ parameters:
       description: Must begin with a letter and can contain underscores/alphanumeric characters.
     - length: { max : 50 }
 
-  stackID:
+  bigDataStackId:
     label: Cluster Stack ID
-    description: Use only allowed cluster stack ID to build cluster.
+    description: Specify a big data stack ID required to build clusters based on requirement
     type: string
     default: "SPARK_HDP2_2"
     constraints:
     - allowed_values: "SPARK_HDP2_2"
+      description: Must choose a valid big data stack ID.
 
 
   # Cluster login
@@ -104,7 +105,7 @@ resources:
   cbd_cluster:
     type: "Rackspace::Cloud::BigData"
     properties:
-      stackId:       { get_param: stackId }
+      stackId:       { get_param: bigDataStackId }
       clusterName:   { get_param: clusterName }
       clusterLogin:  { get_param: username }
       flavor:        { get_param: flavor }
