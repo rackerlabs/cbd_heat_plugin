@@ -71,15 +71,15 @@ class RackspaceCBDClientPlugin(client_plugin.ClientPlugin):
         endpoint_uri = ("https://{region}.bigdata.api.rackspacecloud.com:443/"
                         "v2/{tenant}".format(region=region, tenant=tenant))
         try:
-            lava_client = Lava(username=username,
-                               tenant_id=self.context.tenant_id,
-                               auth_url=self.context.auth_url,
-                               api_key=None,
-                               token=self.context.auth_token,
-                               region=region,
-                               endpoint=endpoint_uri,
-                               verify_ssl=False)
-            return lava_client
+            self.lava_client = Lava(username=username,
+                                    tenant_id=self.context.tenant_id,
+                                    auth_url=self.context.auth_url,
+                                    api_key=None,
+                                    token=self.context.auth_token,
+                                    region=region,
+                                    endpoint=endpoint_uri,
+                                    verify_ssl=False)
+            return self.lava_client
         except LavaError as exc:
             LOG.warn(_LW("CBD client authentication failed: %s."), exc)
             raise exception.AuthorizationFailure()
