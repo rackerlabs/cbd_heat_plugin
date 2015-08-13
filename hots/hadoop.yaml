@@ -41,7 +41,7 @@ parameters:
     type: string
     default: "HADOOP_HDP2_2"
     constraints:
-    - allowed_values: "HADOOP_HDP2_2"
+    - allowed_values: ["HADOOP_HDP2_2"]
       description: Must choose a valid big data stack ID.
 
   # Cluster login
@@ -115,12 +115,8 @@ resources:
 
 outputs:
   cluster_id:
-    value: { get_attr: [cbd_cluster, clusterId] }
+    value: { get_resource: cbd_cluster }
     description: Cloud Big Data Cluster ID
-
-  stack_id:
-    value: { get_attr: [cbd_cluster, stackId] }
-    description: Cloud Big Data Stack ID
 
   cbd_version:
     value: { get_attr: [cbd_cluster, cbdVersion] }
