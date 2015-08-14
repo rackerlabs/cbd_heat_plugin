@@ -28,6 +28,24 @@ from lavaclient.error import LavaError, RequestError
 LOG = logging.getLogger(__name__)
 
 
+class StackConstraint(constraints.BaseCustomConstraint):
+    """Validate CBD stack IDs."""
+    expected_exceptions = (LavaError,)
+
+    def validate_with_client(self, client, stack_id):
+        """Check stack ID with CBD client."""
+        client.client_plugin("cloud_big_data").get_stack(stack_id)
+
+
+class FlavorConstraint(constraints.BaseCustomConstraint):
+    """Validate CBD flavors."""
+    expected_exceptions = (LavaError,)
+
+    def validate_with_client(self, client, flavor):
+        """Check flavor with CBD client."""
+        client.client_plugin("cloud_big_data").get_flavor_id(flavor)
+
+
 class CloudBigData(resource.Resource):
     """Represents a Cloud Big Data resource."""
     support_status = support.SupportStatus(version='2015.8')
@@ -53,8 +71,7 @@ class CloudBigData(resource.Resource):
             properties.Schema.STRING,
             _('Rackspace Cloud Big Data Stack ID.'),
             constraints=[
-                constraints.Length(max=50,
-                                   description="Stack ID is to long.")
+                constraints.CustomConstraint('cbd.stack')
             ],
             required=True
         ),
@@ -63,8 +80,7 @@ class CloudBigData(resource.Resource):
             _('Rackspace Cloud Big Data Flavor ID to be used for cluster slave'
               'nodes.'),
             constraints=[
-                constraints.Length(max=50,
-                                   description="Flavor ID is to long.")
+                constraints.CustomConstraint('cbd.flavor')
             ],
             required=True
         ),

@@ -40,6 +40,10 @@ class RackspaceCBDClientPlugin(client_plugin.ClientPlugin):
         """Return the CBD Lava client."""
         return self.lava_client
 
+    def get_stack(self, stack_id):
+        """Use the CBD client to check existance of a stack."""
+        self.client().stacks.get(stack_id)
+
     def get_flavor_id(self, flavor):
         """Get the id for the specified flavor name.
 
