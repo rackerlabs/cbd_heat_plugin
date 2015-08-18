@@ -23,9 +23,33 @@ from heat.common import exception
 from heat.common.i18n import _LI
 from heat.common.i18n import _LW
 from heat.engine.clients import client_plugin
+from heat.engine import constraints
 
 
 LOG = logging.getLogger(__name__)
+
+
+class StackConstraint(constraints.BaseCustomConstraint):
+    """Validate CBD stack IDs."""
+    expected_exceptions = (RequestError,)
+
+    def validate_with_client(self, client, stack_id):
+        """Check stack ID with CBD client."""
+        try:
+            client.client("cloud_big_data").stacks.get(stack_id)
+        except RequestError as exc:
+            if exc.code == 404:  # Resource not found
+                raise
+            raise LavaError(exc)
+
+
+class FlavorConstraint(constraints.BaseCustomConstraint):
+    """Validate CBD flavors."""
+    expected_exceptions = (exception.FlavorMissing,)
+
+    def validate_with_client(self, client, flavor):
+        """Check flavor with CBD client."""
+        client.client_plugin("cloud_big_data").get_flavor_id(flavor)
 
 
 class RackspaceCBDClientPlugin(client_plugin.ClientPlugin):
@@ -34,16 +58,6 @@ class RackspaceCBDClientPlugin(client_plugin.ClientPlugin):
     Creating a new class instead of complicating the original class
     since CBD is not Pyrax-based.
     """
-    lava_client = None
-
-    def _get_client(self, ignored):
-        """Return the CBD Lava client."""
-        return self.lava_client
-
-    def get_stack(self, stack_id):
-        """Use the CBD client to check existance of a stack."""
-        self.client().stacks.get(stack_id)
-
     def get_flavor_id(self, flavor):
         """Get the id for the specified flavor name.
 
@@ -53,7 +67,7 @@ class RackspaceCBDClientPlugin(client_plugin.ClientPlugin):
         :raises: exception.FlavorMissing
         """
         try:
-            flavor_list = self._get_client("cloud_big_data").flavors.list()
+            flavor_list = self.client().flavors.list()
         except LavaError as exc:
             LOG.info("Unable to read CBD flavor list", exc_info=exc)
             raise
@@ -75,21 +89,20 @@ class RackspaceCBDClientPlugin(client_plugin.ClientPlugin):
         endpoint_uri = ("https://{region}.bigdata.api.rackspacecloud.com:443/"
                         "v2/{tenant}".format(region=region, tenant=tenant))
         try:
-            self.lava_client = Lava(username=username,
-                                    tenant_id=self.context.tenant_id,
-                                    auth_url=self.context.auth_url,
-                                    api_key=None,
-                                    token=self.context.auth_token,
-                                    region=region,
-                                    endpoint=endpoint_uri,
-                                    verify_ssl=False)
-            return self.lava_client
+            return Lava(username=username,
+                        tenant_id=self.context.tenant_id,
+                        auth_url=self.context.auth_url,
+                        api_key=None,
+                        token=self.context.auth_token,
+                        region=region,
+                        endpoint=endpoint_uri,
+                        verify_ssl=False)
         except LavaError as exc:
             LOG.warn(_LW("CBD client authentication failed: %s."), exc)
             raise exception.AuthorizationFailure()
-        LOG.info(_LI("User %s authenticated successfully."), username)
+        LOG.info(_LI("CBD user %s authenticated successfully."), username)
 
-    def is_not_found(self, ex):
+    def is_not_found(self, exc):
         """Determine if a CBD cluster exists."""
-        return (isinstance(ex, RequestError) and
-                ex.code == 404)
+        return (isinstance(exc, RequestError) and
+                exc.code == 404)
