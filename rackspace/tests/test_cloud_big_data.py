@@ -13,7 +13,8 @@
 
 import uuid
 import mock
-from mox import MockObject
+from ..clients import StackConstraint, FlavorConstraint, \
+    RackspaceCBDClientPlugin, cfg
 
 from heat.common import template_format
 from heat.engine import environment
@@ -25,7 +26,9 @@ from heat.tests import common
 from heat.tests import utils
 
 from ..resources import cloud_big_data as cbd
-from lavaclient import client
+from mock import MagicMock
+from heat.engine import resource as res
+
 
 TEMPLATE = """ {
     "heat_template_version": "2014-10-16",
@@ -33,9 +36,11 @@ TEMPLATE = """ {
         "cbd_cluster": {
             "type": "Rackspace::Cloud::BigData",
             "properties": {
-                "clusterLogin": "arpi7023",
+                "clusterLogin": "test_user",
                 "stackId": "HADOOP_HDP2_2",
-                "publicKey": "test",
+                "publicKey": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0UGHHrNc
+                              EekIsAeoXQxb1Ed8F3or3Zl402bCWTcSeZC9uTOKmi0WJK
+                              s7zFJf78ueM5J",
                 "publicKeyName": "test",
                 "flavor": "Small Hadoop Instance",
                 "numSlaveNodes": 3,
@@ -60,11 +65,13 @@ CREATE_CLUSTER_ARG_1 = {'name': 'test',
                           'flavor_id': FLAVOR_ID['Small Hadoop Instance'],
                           'id': 'slave'}],
                         'ssh_keys': [u'test'], 'stack_id': u'HADOOP_HDP2_2',
-                        'user_scripts': [], 'username': u'arpi7023'}
+                        'user_scripts': [], 'username': u'test_user'}
 
 
 class FakeCluster(object):
+
     """Fake cluster class for testing."""
+
     def __init__(self, _id=None, name=None, status=None, stack_id=None,
                  cbd_version=None):
         """Fake cluster response."""
@@ -74,15 +81,31 @@ class FakeCluster(object):
         self.stack_id = stack_id
         self.cbd_version = cbd_version
 
-
+# pylint: disable=no-init
 class BigdataTest(common.HeatTestCase):
+
     """Cloud Big Data test class."""
 
     def setUp(self):
         """Initialization."""
         super(BigdataTest, self).setUp()
+        RackspaceCBDClientPlugin._client = mock.MagicMock()
+
+        self.mck_cbd_client = mock.MagicMock()
+        self.patchobject(RackspaceCBDClientPlugin,
+                         '_create').return_value = self.mck_cbd_client
+        self.client_plugin = RackspaceCBDClientPlugin(context=mock.MagicMock())
+        cfg.CONF.set_override('region_name_for_services', 'RegionOne')
         resource._register_class('Rackspace::Cloud::BigData',
                                  cbd.CloudBigData)
+
+    def stub_StackConstraint_validate(self):
+        validate = self.patchobject(StackConstraint, 'validate')
+        validate.return_value = True
+
+    def stub_FlavorConstraint_validate(self):
+        validate = self.patchobject(FlavorConstraint, 'validate')
+        validate.return_value = True
 
     def _setup_test_stack(self, stack_name, test_templ):
         """Helper method to parse template and stack."""
@@ -95,23 +118,21 @@ class BigdataTest(common.HeatTestCase):
                              stack_user_project_id='8888')
         return (templ, stack)
 
-    def _stubout_create(self, instance, fake_cbdinstance, create_args):
+    def setup_cluster_delete(self, cluster):
+        self.mck_cbd_client.cluster.delete.return_value = True
+        cluster.check_delete_complete = mock.Mock(return_value=True)
+        self.m.ReplayAll()
+
+    def _stubout_create(self, fake_cbdinstance):
         """Mock cluster creation."""
-        mock_client = MockObject(client.Lava)
-        self.m.StubOutWithMock(instance, 'cloud_big_data')
-        instance.cloud_big_data().AndReturn(mock_client)
-        credentials = self.m.CreateMockAnything()
-        mock_client.credentials = credentials
-        clusters = self.m.CreateMockAnything()
-        mock_client.clusters = clusters
-        self.m.StubOutWithMock(mock_client.credentials, 'create_ssh_key', True)
-        self.m.StubOutWithMock(mock_client.clusters, 'create', True)
-        self.m.StubOutWithMock(instance, 'get_flavor_id')
-        flavor_name = self._get_flavor_name(
-            create_args['node_groups'][0]['flavor_id'])
-        instance.get_flavor_id(flavor_name).AndReturn(FLAVOR_ID[flavor_name])
-        mock_client.credentials.create_ssh_key("test", "test").AndReturn('')
-        mock_client.clusters.create(**create_args).AndReturn(fake_cbdinstance)
+        self.stub_StackConstraint_validate()
+        self.stub_FlavorConstraint_validate()
+        self.mck_cbd_client.credentials.create_ssh_key.\
+            return_value = MagicMock()
+        self.mck_cbd_client.clusters.create.return_value = MagicMock(
+            fake_cbdinstance)
+        self.patchobject(RackspaceCBDClientPlugin,
+                         'get_flavor_id').return_value = 'hadoop1-7'
 
     def _setup_test_cluster(self, return_cluster, name, create_args):
         """Helper method to create test cluster."""
@@ -121,7 +142,7 @@ class BigdataTest(common.HeatTestCase):
                                             templ.resource_definitions(
                                                 self.stack)['cbd_cluster'],
                                             self.stack)
-        self._stubout_create(cluster_instance, return_cluster, create_args)
+        self._stubout_create(return_cluster)
         return cluster_instance
 
     def _create_test_cluster(self, return_cluster, name, create_args):
@@ -137,20 +158,11 @@ class BigdataTest(common.HeatTestCase):
             if f_id == flavor_id:
                 return name
 
-    def setup_cluster_delete(self, cluster, fake_cbdinstance):
-        """Mock cluster delete."""
-        mock_client = MockObject(client.Lava)
-        self.m.StubOutWithMock(cluster, 'cloud_big_data')
-        cluster.cloud_big_data().AndReturn(mock_client)
-        clusters = self.m.CreateMockAnything()
-        mock_client.clusters = clusters
-        self.m.StubOutWithMock(mock_client.clusters, 'delete', True)
-        mock_client.clusters.delete(str(fake_cbdinstance.id)).AndReturn('')
-        cluster.check_delete_complete = mock.Mock(return_value=True)
-        self.m.ReplayAll()
-
-    def test_cluster_create(self):
+    @mock.patch.object(res.Resource, 'is_service_available')
+    def test_cluster_create(self, mock_is_service_available):
         """Test basic cluster creation."""
+
+        mock_is_service_available.return_value = True
         fake_cluster = FakeCluster(**RETURN_CLUSTER_1)
         cluster = self._create_test_cluster(
             fake_cluster, 'stack_delete', CREATE_CLUSTER_ARG_1)
@@ -158,14 +170,17 @@ class BigdataTest(common.HeatTestCase):
         self.assertEqual((cluster.CREATE, cluster.COMPLETE), cluster.state)
         self.m.VerifyAll()
 
-    def test_cluster_delete(self):
+    @mock.patch.object(res.Resource, 'is_service_available')
+    def test_cluster_delete(self, mock_is_service_available):
         """Test basic cluster deletion."""
+
+        mock_is_service_available.return_value = True
         fake_cluster = FakeCluster(**RETURN_CLUSTER_1)
         cluster = self._create_test_cluster(
             fake_cluster, 'stack_delete', CREATE_CLUSTER_ARG_1)
         scheduler.TaskRunner(cluster.create)()
         self.m.UnsetStubs()
-        self.setup_cluster_delete(cluster, fake_cbdinstance=fake_cluster)
+        self.setup_cluster_delete(cluster)
         scheduler.TaskRunner(cluster.delete)()
         self.assertEqual((cluster.DELETE, cluster.COMPLETE), cluster.state)
         self.m.VerifyAll()
