@@ -66,16 +66,20 @@ class RackspaceCBDClientPlugin(client_plugin.ClientPlugin):
         :returns: the id of :flavor:
         :raises: exception.FlavorMissing
         """
+        flavor_id = None
         try:
             flavor_list = self.client().flavors.list()
         except LavaError as exc:
             LOG.info("Unable to read CBD flavor list", exc_info=exc)
             raise
         for bigdata_flavor in flavor_list:
-            if bigdata_flavor.name == flavor:
-                return bigdata_flavor.id
-        LOG.info("Unable to find CBD flavor %s", flavor)
-        raise exception.FlavorMissing(flavor_id=flavor)
+            if bigdata_flavor.name == flavor or bigdata_flavor.id == flavor:
+                flavor_id = bigdata_flavor.id
+                break 
+        if flavor_id is None:
+            LOG.info("Unable to find CBD flavor %s", flavor)
+            raise exception.FlavorMissing(flavor_id=flavor)
+        return flavor_id
 
     def _create(self):
         """Create an authenticated CBD client."""
