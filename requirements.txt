@@ -1,2 +1,1 @@
-pyrax>=1.9.2
 lavaclient==0.2.1
