@@ -45,7 +45,7 @@ class StackConstraint(constraints.BaseCustomConstraint):
 
 class FlavorConstraint(constraints.BaseCustomConstraint):
     """Validate CBD flavors."""
-    expected_exceptions = (exception.FlavorMissing,)
+    expected_exceptions = (exception.EntityNotFound,)
 
     def validate_with_client(self, client, flavor):
         """Check flavor with CBD client."""
