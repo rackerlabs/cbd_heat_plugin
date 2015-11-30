@@ -64,7 +64,7 @@ class RackspaceCBDClientPlugin(client_plugin.ClientPlugin):
         If the specified value is flavor id, just return it.
         :param flavor: the name of the flavor to find
         :returns: the id of :flavor:
-        :raises: exception.FlavorMissing
+        :raises: exception.EntityNotFound
         """
         flavor_id = None
         try:
@@ -75,10 +75,10 @@ class RackspaceCBDClientPlugin(client_plugin.ClientPlugin):
         for bigdata_flavor in flavor_list:
             if bigdata_flavor.name == flavor or bigdata_flavor.id == flavor:
                 flavor_id = bigdata_flavor.id
-                break 
+                break
         if flavor_id is None:
             LOG.info("Unable to find CBD flavor %s", flavor)
-            raise exception.FlavorMissing(flavor_id=flavor)
+            raise exception.EntityNotFound(entity='Flavor', name=flavor)
         return flavor_id
 
     def _create(self):
