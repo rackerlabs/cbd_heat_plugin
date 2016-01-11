@@ -211,7 +211,7 @@ class CloudBigData(resource.Resource):
         try:
             cluster = self.client().clusters.get(self.resource_id)
         except LavaError as exc:
-            LOG.debug("Unable to find CBD cluster", exc_info=exc)
+            LOG.error("Unable to find CBD cluster due to: %s", exc)
             return None
 
         if name == self.CBD_VERSION:
